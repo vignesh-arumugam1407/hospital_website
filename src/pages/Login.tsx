@@ -2,15 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { auth, googleProvider } from "../lib/firebase";
-import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
-import { signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { motion } from "motion/react";
 import { HeartPulse } from "lucide-react";
 
 export const Login = () => {
-  const handleGoogleLogin = () => {
-    signInWithRedirect(auth, googleProvider);
-  };
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -38,6 +34,14 @@ export const Login = () => {
       setError(err.message || "Failed to log in.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      console.error("Google login failed", error);
     }
   };
 
