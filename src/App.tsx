@@ -10,6 +10,8 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoutes';
 import { autoSeedDatabase } from './lib/seedData';
+import { getRedirectResult } from "firebase/auth";
+import { auth } from "./lib/firebase";
 
 // Pages
 import { Home } from './pages/Home';
@@ -22,6 +24,19 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 
+
+
+useEffect(() => {
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result) {
+        console.log("User:", result.user);
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+}, []);
 export default function App() {
   useEffect(() => {
     autoSeedDatabase();
