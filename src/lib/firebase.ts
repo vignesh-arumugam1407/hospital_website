@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import.meta.env.VITE_FIREBASE_API_KEY;
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyBn2ePXc2U6viwNcdNsstZqgTjJ2EqMdcs",
+  authDomain: "laskmihospital.firebaseapp.com",
+  projectId: "laskmihospital",
+  storageBucket: "laskmihospital.firebasestorage.app",
+  messagingSenderId: "627815625185",
+  appId: "1:627815625185:web:67af1cf9a9ca2f792c62a0",
+  measurementId: "G-JV8K0PY4RP",
 };
 
 const app = initializeApp(firebaseConfig);
