@@ -31,7 +31,11 @@ export const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       console.error("Login failed", err);
-      setError(err.message || "Failed to log in.");
+      if (err.code === 'auth/invalid-credential') {
+        setError("Invalid email or password. If you don't have an account, please sign up first!");
+      } else {
+        setError(err.message || "Failed to log in.");
+      }
     } finally {
       setLoading(false);
     }

@@ -25,20 +25,20 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 
 
-useEffect(() => {
-  getRedirectResult(auth)
-    .then((result) => {
-      if (result) {
-        console.log("User:", result.user);
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-}, []);
 export default function App() {
   useEffect(() => {
     autoSeedDatabase();
+    
+    // Check for redirect result from Firebase auth
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          console.log("User:", result.user);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }, []);
 
   return (

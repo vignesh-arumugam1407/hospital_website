@@ -1,13 +1,21 @@
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
+let isSeeding = false;
+
 export const autoSeedDatabase = async () => {
+  if (isSeeding) return;
+  
   try {
+    isSeeding = true;
     const depsSnap = await getDocs(collection(db, 'departments'));
     if (!depsSnap.empty) return; // Already seeded
 
     console.log("Database is empty. Auto-seeding dummy data...");
     
+    // Create a batch instance
+    const batch = writeBatch(db);
+
     const dummyDepartments = [
       { name: 'Cardiology', description: 'Expert care for heart and cardiovascular conditions.', icon: 'Cardiology' },
       { name: 'Neurology', description: 'Advanced treatment for brain and nervous system disorders.', icon: 'Neurology' },
@@ -21,7 +29,8 @@ export const autoSeedDatabase = async () => {
 
     const deptIds: Record<string, string> = {};
     for (const dept of dummyDepartments) {
-      const docRef = await addDoc(collection(db, 'departments'), dept);
+      const docRef = doc(collection(db, 'departments'));
+      batch.set(docRef, dept);
       deptIds[dept.name] = docRef.id;
     }
 
@@ -36,13 +45,18 @@ export const autoSeedDatabase = async () => {
       { name: 'Dr. David Kim', specialty: 'Psychiatrist', departmentId: deptIds['Psychiatry'], experience: 11, about: 'Dr. Kim focuses on holistic mental health treatments, combining therapy with modern psychiatric medicine.', userId: 'dummy_user_8', photoURL: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400&h=400' },
     ];
 
-    for (const doc of dummyDoctors) {
-      await addDoc(collection(db, 'doctors'), doc);
+    for (const docData of dummyDoctors) {
+      const doctorRef = doc(collection(db, 'doctors'));
+      batch.set(doctorRef, docData);
     }
+    
+    // Commit the batch in a single atomic request
+    await batch.commit();
     
     console.log("Auto-seeding complete!");
     window.dispatchEvent(new Event('data-seeded'));
   } catch (error) {
     console.error("Error auto-seeding database:", error);
+    isSeeding = false; // Reset if failed
   }
 };
