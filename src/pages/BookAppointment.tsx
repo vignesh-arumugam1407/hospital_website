@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, setDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -63,36 +63,47 @@ export const BookAppointment = () => {
     try {
       const slotId = `${formData.doctorId}_${formData.date}_${formData.time}`;
       const slotRef = doc(db, 'booked_slots', slotId);
-      const slotSnap = await getDoc(slotRef);
+      const newApptRef = doc(collection(db, 'appointments'));
       
-      if (slotSnap.exists()) {
-        alert("This time slot is already booked. Please select another time.");
-        setSubmitting(false);
-        return;
-      }
-
-      await setDoc(slotRef, {
-        doctorId: formData.doctorId,
-        date: formData.date,
-        time: formData.time
-      });
-
       const selectedDoc = doctors.find(d => d.id === formData.doctorId);
       const selectedDept = departments.find(d => d.id === selectedDoc?.departmentId);
       
-      await addDoc(collection(db, 'appointments'), {
-        patientId: user.uid,
-        patientName: profile.name,
-        phoneNumber: formData.phoneNumber,
-        doctorId: formData.doctorId,
-        doctorName: selectedDoc?.name || 'Unknown',
-        departmentName: selectedDept?.name || 'General',
-        date: formData.date,
-        time: formData.time,
-        status: 'pending',
-        notes: formData.notes,
-        createdAt: new Date().toISOString()
-      });
+      try {
+        await runTransaction(db, async (transaction) => {
+          const slotSnap = await transaction.get(slotRef);
+          
+          if (slotSnap.exists()) {
+            throw new Error("SLOT_TAKEN");
+          }
+
+          transaction.set(slotRef, {
+            doctorId: formData.doctorId,
+            date: formData.date,
+            time: formData.time
+          });
+
+          transaction.set(newApptRef, {
+            patientId: user.uid,
+            patientName: profile.name,
+            phoneNumber: formData.phoneNumber,
+            doctorId: formData.doctorId,
+            doctorName: selectedDoc?.name || 'Unknown',
+            departmentName: selectedDept?.name || 'General',
+            date: formData.date,
+            time: formData.time,
+            status: 'pending',
+            notes: formData.notes,
+            createdAt: new Date().toISOString()
+          });
+        });
+      } catch (err: any) {
+        if (err.message === "SLOT_TAKEN") {
+          alert("This time slot is already booked. Please select another time.");
+          setSubmitting(false);
+          return;
+        }
+        throw err;
+      }
       
       navigate('/dashboard');
     } catch (error) {

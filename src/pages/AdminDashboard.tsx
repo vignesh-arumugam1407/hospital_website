@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, updateDoc, doc, deleteDoc, addDoc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
 import { Users, Calendar, Stethoscope, Building, Trash2, CheckCircle, XCircle, Database } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'doctors' | 'departments'>('appointments');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingDoctor, setUploadingDoctor] = useState(false);
 
   useEffect(() => {
     const unsubAppointments = onSnapshot(collection(db, 'appointments'), (snap) => {
@@ -21,6 +25,10 @@ export const AdminDashboard = () => {
 
     const unsubDepartments = onSnapshot(collection(db, 'departments'), (snap) => {
       setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
 
@@ -28,6 +36,7 @@ export const AdminDashboard = () => {
       unsubAppointments();
       unsubDoctors();
       unsubDepartments();
+      unsubUsers();
     };
   }, []);
 
@@ -168,20 +177,41 @@ export const AdminDashboard = () => {
 
   const handleAddDoctor = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setUploadingDoctor(true);
     const formData = new FormData(e.currentTarget);
+    const imageFile = formData.get('image') as File;
+    let photoURL = '';
+
     try {
+      if (imageFile && imageFile.size > 0) {
+        const fileRef = ref(storage, `doctors/${Date.now()}_${imageFile.name}`);
+        const snapshot = await uploadBytes(fileRef, imageFile);
+        photoURL = await getDownloadURL(snapshot.ref);
+      }
+
+      const newUserId = formData.get('userId') as string;
+
       await addDoc(collection(db, 'doctors'), {
-        name: formData.get('name'),
-        specialty: formData.get('specialty'),
-        departmentId: formData.get('departmentId'),
+        name: formData.get('name') as string,
+        specialty: formData.get('specialty') as string,
+        departmentId: formData.get('departmentId') as string,
         experience: Number(formData.get('experience')),
-        about: formData.get('about'),
-        userId: 'placeholder_user_id', // In a real app, this would link to an actual user account
-        photoURL: ''
+        about: formData.get('about') as string,
+        userId: newUserId, 
+        photoURL: photoURL
       });
+
+      if (newUserId) {
+        await updateDoc(doc(db, 'users', newUserId), { role: 'doctor' });
+      }
+
       (e.target as HTMLFormElement).reset();
+      toast.success("Doctor added successfully.");
     } catch (error) {
       console.error("Error adding doctor:", error);
+      toast.error("Failed to add doctor.");
+    } finally {
+      setUploadingDoctor(false);
     }
   };
 
@@ -213,6 +243,7 @@ export const AdminDashboard = () => {
           </button>
         </nav>
         
+        {import.meta.env.DEV && (
         <div className="mt-12 pt-8 border-t border-gray-200">
           <button 
             onClick={seedDummyData}
@@ -222,6 +253,7 @@ export const AdminDashboard = () => {
           </button>
           <p className="text-xs text-gray-400 mt-2 px-2">Click to populate database with sample departments and doctors.</p>
         </div>
+        )}
       </div>
 
       {/* Main Content */}
@@ -331,9 +363,21 @@ export const AdminDashboard = () => {
                     <option value="">Select Department</option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
+                  <select name="userId" required className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Select User Account (to link to Doctor Profile)</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                  </select>
                   <input name="experience" type="number" required placeholder="Years of Experience" className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
                   <textarea name="about" required placeholder="About the doctor..." className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows={3}></textarea>
-                  <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors">Add Doctor</button>
+                  
+                  <div className="pt-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Doctor Photo (Optional)</label>
+                    <input name="image" type="file" accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+                  </div>
+
+                  <button type="submit" disabled={uploadingDoctor} className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-70">
+                    {uploadingDoctor ? 'Adding...' : 'Add Doctor'}
+                  </button>
                 </form>
               </div>
             </div>

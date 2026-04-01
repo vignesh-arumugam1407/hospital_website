@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Calendar, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
@@ -43,6 +43,20 @@ export const Dashboard = () => {
 
     fetchData();
   }, [user]);
+
+  const handleCancelAppointment = async (id: string, doctorId: string, date: string, time: string) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+    
+    try {
+      await updateDoc(doc(db, 'appointments', id), { status: 'cancelled' });
+      await deleteDoc(doc(db, 'booked_slots', `${doctorId}_${date}_${time}`));
+      
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a));
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel the appointment. Please try again.");
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -108,6 +122,14 @@ export const Dashboard = () => {
                           {getStatusIcon(appt.status)}
                           {appt.status}
                         </span>
+                        {(appt.status === 'pending' || appt.status === 'confirmed') && (
+                          <button 
+                            onClick={() => handleCancelAppointment(appt.id, appt.doctorId, appt.date, appt.time)}
+                            className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
+                          >
+                            Cancel Appointment
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

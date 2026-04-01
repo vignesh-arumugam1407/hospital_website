@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { auth, googleProvider } from "../lib/firebase";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { motion } from "motion/react";
 import { HeartPulse } from "lucide-react";
+import toast from "react-hot-toast";
 
 export const Login = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnUrl = searchParams.get("returnUrl") || "/dashboard";
@@ -17,11 +18,12 @@ export const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Only redirect when BOTH user and profile are loaded
   useEffect(() => {
-    if (user) {
-      navigate(returnUrl);
+    if (user && profile) {
+      navigate(returnUrl, { replace: true });
     }
-  }, [user, navigate, returnUrl]);
+  }, [user, profile, navigate, returnUrl]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,7 @@ export const Login = () => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Signed in successfully!");
     } catch (err: any) {
       console.error("Login failed", err);
       if (err.code === 'auth/invalid-credential') {
@@ -42,10 +45,19 @@ export const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setError("");
     try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
+      await signInWithPopup(auth, googleProvider);
+      toast.success("Signed in with Google!");
+    } catch (error: any) {
       console.error("Google login failed", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError("Sign-in popup was closed. Please try again.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Popup was blocked by your browser. Please allow popups for this site.");
+      } else {
+        setError(error.message || "Google sign-in failed.");
+      }
     }
   };
 

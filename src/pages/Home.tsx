@@ -78,7 +78,7 @@ export const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Shree Lakshmi Child Hospital?</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">Shree Lakshmi Clinic has all facilities.We are specialist in Pediatric, Infertility, Skin, Diabetes, Ortho , Gyneology etc…</p>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">Shree Lakshmi Clinic has all facilities. We are specialists in Pediatrics, Infertility, Skin, Diabetes, Orthopedics, Gynecology, etc…</p>
           </div>
           <div className="grid md:grid-cols-3 gap-10">
             {[

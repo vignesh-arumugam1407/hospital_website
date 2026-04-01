@@ -31,27 +31,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const docRef = doc(db, 'users', currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data() as UserProfile;
-          if (currentUser.email === 'manithamkarpom@gmail.com' && data.role !== 'admin') {
-            data.role = 'admin';
-            await setDoc(docRef, { role: 'admin' }, { merge: true });
+        try {
+          const docRef = doc(db, 'users', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            if (currentUser.email === 'manithamkarpom@gmail.com' && data.role !== 'admin') {
+              data.role = 'admin';
+              await setDoc(docRef, { role: 'admin' }, { merge: true });
+            }
+            setProfile(data);
+          } else {
+            // Create new user profile
+            const newProfile: UserProfile = {
+              uid: currentUser.uid,
+              name: currentUser.displayName || 'Anonymous User',
+              email: currentUser.email || 'no-email@example.com',
+              role: currentUser.email === 'manithamkarpom@gmail.com' ? 'admin' : 'patient',
+              photoURL: currentUser.photoURL || '',
+              createdAt: new Date().toISOString(),
+            };
+            await setDoc(docRef, newProfile);
+            setProfile(newProfile);
           }
-          setProfile(data);
-        } else {
-          // Create new user profile
-          const newProfile: UserProfile = {
-            uid: currentUser.uid,
-            name: currentUser.displayName || 'Anonymous User',
-            email: currentUser.email || '',
-            role: currentUser.email === 'manithamkarpom@gmail.com' ? 'admin' : 'patient',
-            photoURL: currentUser.photoURL || '',
-            createdAt: new Date().toISOString(),
-          };
-          await setDoc(docRef, newProfile);
-          setProfile(newProfile);
+        } catch (error) {
+          console.error("Critical Profile Error: Rules may have blocked creation or fetch.", error);
+          setProfile(null);
         }
       } else {
         setProfile(null);

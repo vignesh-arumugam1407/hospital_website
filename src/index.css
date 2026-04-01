@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+
+  /* Rapid Global Dark Mode by inverting the key palette scales */
+  .dark {
+    --color-white: #1e1e2d;
+    --color-gray-50: #151521;
+    --color-gray-100: #2b2b40;
+    --color-gray-200: #3f4254;
+    --color-gray-300: #5e6278;
+    --color-gray-400: #a1a5b7;
+    --color-gray-500: #b5b5c3;
+    --color-gray-600: #d8d8e5;
+    --color-gray-700: #e4e6ef;
+    --color-gray-800: #f3f6f9;
+    --color-gray-900: #ffffff;
+    
+    /* Soften emerald to be less harsh on dark */
+    --color-emerald-50: #003626;
+    --color-emerald-100: #004b36;
+    --color-emerald-200: #006046;
+    --color-emerald-600: #10b981;
+    --color-emerald-700: #059669;
+    --color-emerald-800: #047857;
+  }
+}

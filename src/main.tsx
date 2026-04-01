@@ -1,4 +1,3 @@
-console.log(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
